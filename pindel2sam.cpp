@@ -17,10 +17,10 @@
  ****
  *
  * Args: <pindel data directory> <output directory> config_file fafai_file
- * 
+ *
  * Description: Converts Pindel data files (_D & _SI) into SAM format.
- * 
- * NOTES: 
+ *
+ * NOTES:
  *  dirent.h taken from users.cis.fiu.edu/~weiss/cop4338_spr06/dirent.h.
  *  Make sure that the output directory does not contain any previously generated output files.
  *  Any files ending with _D or _SI in the pindel data directory will be read.
@@ -33,13 +33,13 @@
  */
 
 ///////////////////////////////////////////////////////////////////////////
-//The following is a copy of dirent.h from 
+//The following is a copy of dirent.h from
 // users.cis.fiu.edu/~weiss/cop4338_spr06/dirent.h downloaded 7 July 2014.
 /*
  * uce-dirent.h - operating system independent dirent implementation
- * 
+ *
  * Copyright (C) 1998-2002  Toni Ronkko
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * ``Software''), to deal in the Software without restriction, including
@@ -47,10 +47,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included
  * in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND, EXPRESS
  * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -58,8 +58,8 @@
  * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- * 
- * 
+ *
+ *
  * May 28 1998, Toni Ronkko <tronkko@messi.uku.fi>
  *
  * $Id: uce-dirent.h,v 1.7 2002/05/13 10:48:35 tr Exp $
@@ -95,7 +95,7 @@
  * Revision 1.1  1998/07/04 16:27:51  tr
  * Initial revision
  *
- * 
+ *
  * MSVC 1.0 scans automatic dependencies incorrectly when your project
  * contains this very header.  The problem is that MSVC cannot handle
  * include directives inside #if..#endif block those are never entered.
@@ -115,6 +115,19 @@
  * HAVE_DIRECT_H, HAVE_DIR_H, HAVE_NDIR_H, HAVE_SYS_DIR_H and
  * HAVE_SYS_NDIR_H according to the files found.
  */
+#include <string>     // std::string, std::to_string
+#include <sstream>
+
+namespace patch {
+  template < typename T > std::string to_string( const T& n ) {
+    std::ostringstream stm ;
+    stm << n ;
+    return stm.str() ;
+  }
+}
+
+
+
 #ifndef DIRENT_H
 #define DIRENT_H
 #define DIRENT_H_INCLUDED
@@ -359,7 +372,7 @@ static void _setdirname (struct DIR *dirp);
  * internal working area that is used for retrieving individual directory
  * entries.  The internal working area has no fields of your interest.
  *
- * <ret>Returns a pointer to the internal working area or NULL in case the 
+ * <ret>Returns a pointer to the internal working area or NULL in case the
  * directory stream could not be opened.  Global `errno' variable will set
  * in case of error as follows:
  *
@@ -382,11 +395,11 @@ opendir(
 {
   DIR *dirp;
   assert (dirname != NULL);
-  
+
   dirp = (DIR*)malloc (sizeof (struct DIR));
   if (dirp != NULL) {
     char *p;
-    
+
     /* allocate room for directory name */
     dirp->dirname = (char*) malloc (strlen (dirname) + 1 + strlen ("\\*.*"));
     if (dirp->dirname == NULL) {
@@ -545,7 +558,7 @@ readdir (DIR *dirp)
  */
 static int
 closedir (DIR *dirp)
-{   
+{
   int retcode = 0;
 
   /* make sure that dirp points to legal structure */
@@ -554,7 +567,7 @@ closedir (DIR *dirp)
     errno = EBADF;
     return -1;
   }
- 
+
   /* free directory name and search handles */
   if (dirp->dirname != NULL) free (dirp->dirname);
 
@@ -566,7 +579,7 @@ closedir (DIR *dirp)
       errno = EBADF;
     }
   }
-#endif                     
+#endif
 
   /* clear dirp structure to make sure that it cannot be used anymore*/
   memset (dirp, 0, sizeof (*dirp));
@@ -602,7 +615,7 @@ closedir (DIR *dirp)
  */
 static void
 rewinddir (DIR *dirp)
-{   
+{
   /* make sure that dirp is legal */
   assert (dirp != NULL);
   if (dirp == NULL) {
@@ -610,7 +623,7 @@ rewinddir (DIR *dirp)
     return;
   }
   assert (dirp->dirname != NULL);
-  
+
   /* close previous stream */
 #if defined(DIRENT_WIN32_INTERFACE)
   if (dirp->search_handle != INVALID_HANDLE_VALUE) {
@@ -636,7 +649,7 @@ rewinddir (DIR *dirp)
  */
 static int
 _initdir (DIR *dirp)
-{ 
+{
   assert (dirp != NULL);
   assert (dirp->dirname != NULL);
   dirp->dirent_filled = 0;
@@ -657,7 +670,7 @@ _initdir (DIR *dirp)
           _A_SUBDIR | _A_RDONLY | _A_ARCH | _A_SYSTEM | _A_HIDDEN,
           &dirp->current.data) != 0)
   {
-    /* _dos_findfirst and findfirst will set errno to ENOENT when no 
+    /* _dos_findfirst and findfirst will set errno to ENOENT when no
      * more entries could be retrieved. */
     return 0;
   }
@@ -678,13 +691,13 @@ _getdirname (const struct dirent *dp)
 {
 #if defined(DIRENT_WIN32_INTERFACE)
   return dp->data.cFileName;
-  
+
 #elif defined(DIRENT_USE_FFBLK)
   return dp->data.ff_name;
-  
+
 #else
   return dp->data.name;
-#endif  
+#endif
 }
 
 
@@ -695,13 +708,13 @@ static void
 _setdirname (struct DIR *dirp) {
   /* make sure that d_name is long enough */
   assert (strlen (_getdirname (&dirp->current)) <= NAME_MAX);
-  
+
   strncpy (dirp->current.d_name,
       _getdirname (&dirp->current),
       NAME_MAX);
   dirp->current.d_name[NAME_MAX] = '\0'; /*char d_name[NAME_MAX+1]*/
 }
-  
+
 # ifdef __cplusplus
 }
 # endif
@@ -715,7 +728,7 @@ _setdirname (struct DIR *dirp) {
 #endif /*DIRENT_H*/
 ///////////////////////////////////////////////////////////////////////////
 
-/* pindel2sam */ 
+/* pindel2sam */
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
@@ -774,591 +787,584 @@ void save_sam( const struct sam_fields& , const std::string& );
 void write_files( struct pindel_fields& , std::map<std::string,std::string>& , std::map<std::string,int>& ); //writes the Pindel conversion to SAM
 
 struct pindel_fields {
-	std::string indelType;
-	std::string indelSize;
-	std::string NT_size;
-	std::string NT_sequence;
-	std::string chrID;
-	std::string BPLeft_plus_one;
-	std::string NumSupports;
-	std::string NumSupSamples;
-	std::vector<struct support_data> supports;
+  std::string indelType;
+  std::string indelSize;
+  std::string NT_size;
+  std::string NT_sequence;
+  std::string chrID;
+  std::string BPLeft_plus_one;
+  std::string NumSupports;
+  std::string NumSupSamples;
+  std::vector<struct support_data> supports;
 };
 
 struct support_data {
-	int leftOfIndel;
-	std::string readSequence;
-	std::string readBAMsource;
-	std::string readBarcode;
+  int leftOfIndel;
+  std::string readSequence;
+  std::string readBAMsource;
+  std::string readBarcode;
+  std::string sense;
 };
 
 struct sam_fields {
-	std::string QNAME;
-	std::string FLAG;
-	std::string MAPQ;
-	std::string RNAME;
-	std::string POS;
-	std::string CIGAR;
-	std::string RNEXT;
-	std::string PNEXT;
-	std::string TLEN;
-	std::string SEQ;
-	std::string QUAL;
-	std::string optional;
+  std::string QNAME;
+  std::string FLAG;
+  std::string MAPQ;
+  std::string RNAME;
+  std::string POS;
+  std::string CIGAR;
+  std::string RNEXT;
+  std::string PNEXT;
+  std::string TLEN;
+  std::string SEQ;
+  std::string QUAL;
+  std::string optional;
 };
 
 struct header {
-	std::string top; //@HD\tVN:SAMVERSION
-	std::string custom; //reference sequence info
-	std::string bottom; //@PG\tID:Pindel\tVN:PINDELVERSION
-	std::map<std::string,int> chrLen; //if need to track references within file
+  std::string top; //@HD\tVN:SAMVERSION
+  std::string custom; //reference sequence info
+  std::string bottom; //@PG\tID:Pindel\tVN:PINDELVERSION
+  std::map<std::string,int> chrLen; //if need to track references within file
 };
 
 int main( int argc, char* argv[] )
 {
 /* TAKE INPUTS FROM COMMAND LINE: PINDEL DATA FILE, PINDEL CONFIG FILE */
-//	handleInputs(argc,argv,first_line,last_line);
+//  handleInputs(argc,argv,first_line,last_line);
 
-	std::string inputDirectoryName = argv[1];
-	if ( inputDirectoryName[inputDirectoryName.length()] != '/' )
-		inputDirectoryName += "/";
-	outputDirectoryName = argv[2];
-	if ( outputDirectoryName[outputDirectoryName.length()] != '/' )
-		outputDirectoryName += "/";
-	DIR *dirp = opendir( inputDirectoryName.c_str() );
-	struct dirent *indir;
+  std::string inputDirectoryName = argv[1];
+  if ( inputDirectoryName[inputDirectoryName.length()] != '/' )
+    inputDirectoryName += "/";
+  outputDirectoryName = argv[2];
+  if ( outputDirectoryName[outputDirectoryName.length()] != '/' )
+    outputDirectoryName += "/";
+  DIR *dirp = opendir( inputDirectoryName.c_str() );
+  struct dirent *indir;
 
-	std::string pindelFilename;
-	std::ifstream fromPindel;
+  std::string pindelFilename;
+  std::ifstream fromPindel;
 
-	struct pindel_fields PIN;
-	struct header head;
+  struct pindel_fields PIN;
+  struct header head;
 
-	int nextprint;
+  int nextprint;
 
-	char dummy;
-	std::string line, temp;
-	int leftRefLength;
+  char dummy;
+  std::string line, temp;
+  int leftRefLength;
 
-//	std::iostream error_value;
-//	std::iostream error_log;
+//  std::iostream error_value;
+//  std::iostream error_log;
 
 /* GET INFO FROM CONFIG FILE - file with primary output filename piece */
-	std::string configFilename = argv[3];
-	std::map<std::string,std::string> sampleMap;
-	std::map<std::string,int> outputMap;
-	int configIn = read_config_file( configFilename , sampleMap , outputMap );
-	NUMBEROFSAMPLES = configIn;
+  std::string configFilename = argv[3];
+  std::map<std::string,std::string> sampleMap;
+  std::map<std::string,int> outputMap;
+  int configIn = read_config_file( configFilename , sampleMap , outputMap );
+  NUMBEROFSAMPLES = configIn;
 
 /* GET HEADER INFO FROM REFERENCE INDEX FILE - file with SAM header sequence info */
-	std::string referenceIndexFilename = argv[4];
-	int referenceIn = read_fafai_file( referenceIndexFilename , head );
-	save_header( head , sampleMap );
+  std::string referenceIndexFilename = argv[4];
+  int referenceIn = read_fafai_file( referenceIndexFilename , head );
+  save_header( head , sampleMap );
 
 /* GET INFO FROM PINDEL DATA FILE */
-	int pFnlen;
-	while ( indir = readdir( dirp ) ) //directory position returns 0 when done
-	{
-		pindelFilename = (std::string)indir->d_name;
-		pFnlen = pindelFilename.length()-1;
-		if ( check_ending( pindelFilename ) ) //checks for _D & _SI
-		{
-			fromPindel.open( ( inputDirectoryName+pindelFilename ).c_str() );
-			if ( fromPindel.good() && configIn && referenceIn ) //have a file to check
-			{
-				std::cout << "\t\tOpened: " << inputDirectoryName+pindelFilename << std::endl;
+  int pFnlen;
+  while ( indir = readdir( dirp ) ) //directory position returns 0 when done
+  {
+    pindelFilename = (std::string)indir->d_name;
+    pFnlen = pindelFilename.length()-1;
+    if ( check_ending( pindelFilename ) ) //checks for _D & _SI
+    {
+      fromPindel.open( ( inputDirectoryName+pindelFilename ).c_str() );
+      if ( fromPindel.good() && configIn && referenceIn ) //have a file to check
+      {
+        std::cout << "\t\tOpened: " << inputDirectoryName+pindelFilename << std::endl;
 
-				linenum = 0;
-				nextprint = UPDATEFREQUENCY;
+        linenum = 0;
+        nextprint = UPDATEFREQUENCY;
 
-				while ( fromPindel >> dummy )
-				{
-					temp = "";
-					leftRefLength = 0;
+        while ( fromPindel >> dummy )
+        {
+          temp = "";
+          leftRefLength = 0;
 
-					print_update( nextprint );
+          print_update( nextprint );
 
-					// SUMMARY SEPARATION LINE
-					check_separation( fromPindel , dummy ); //check # count
+          // SUMMARY SEPARATION LINE
+          check_separation( fromPindel , dummy ); //check # count
 
-					// SUMMARY DATA LINE
-					value = set_pindel_fields( fromPindel , PIN ); //set summary data
+          // SUMMARY DATA LINE
+          value = set_pindel_fields( fromPindel , PIN ); //set summary data
 
-					if ( value == 0 ) //no errors from summary section
-					{
-						// REFERENCE LINE
-						leftRefLength = set_reference_detail( fromPindel , PIN );
+          if ( value == 0 ) //no errors from summary section
+          {
+            // REFERENCE LINE
+            leftRefLength = set_reference_detail( fromPindel , PIN );
 
-						// READ SUPPORTS
-						set_supports( fromPindel , PIN , sampleMap , outputMap , leftRefLength );
+            // READ SUPPORTS
+            set_supports( fromPindel , PIN , sampleMap , outputMap , leftRefLength );
 
-						// WRITE TO FILE
-						write_files( PIN , sampleMap , outputMap );
-					}
-					else
-					{//Error in summary	
-						std::cout << "PINDEL2SAM_ERROR: bad summary on line = " << linenum << std::endl;
-						std::getline( fromPindel , line );
-						linenum++;
-					}//if reading supports
-				}//while reading file
-				fromPindel.close();
-				std::cout << "\t\t\t\tClosed: " << inputDirectoryName+pindelFilename << std::endl;
-			}//if file opened
-			else
-			{//Error opening file
-				std::cout << "PINDEL2SAM_ERROR: could not open " << inputDirectoryName+pindelFilename << std::endl;
-			}
-		}//if _D or _SI
-	}//while files available to read in
-	int tempint = closedir( dirp );
+            // WRITE TO FILE
+            write_files( PIN , sampleMap , outputMap );
+          }
+          else
+          {//Error in summary
+            std::cout << "PINDEL2SAM_ERROR: bad summary on line = " << linenum << std::endl;
+            std::getline( fromPindel , line );
+            linenum++;
+          }//if reading supports
+        }//while reading file
+        fromPindel.close();
+        std::cout << "\t\t\t\tClosed: " << inputDirectoryName+pindelFilename << std::endl;
+      }//if file opened
+      else
+      {//Error opening file
+        std::cout << "PINDEL2SAM_ERROR: could not open " << inputDirectoryName+pindelFilename << std::endl;
+      }
+    }//if _D or _SI
+  }//while files available to read in
+  int tempint = closedir( dirp );
 
-	return 0;
+  return 0;
 }//main
 
 /* FUNCTIONS */
 int str2int( const std::string& str )
 {
-	return atoi( str.c_str() );
+  return atoi( str.c_str() );
 }
 
 std::string int2str( const int& ent )
 {
-	std::stringstream ss;
-	ss << ent;
-	std::string str = ss.str();
+  std::stringstream ss;
+  ss << ent;
+  std::string str = ss.str();
 
-	return str;
+  return str;
 }
 
 bool check_ending( const std::string filename )
 {
-	int fnlen = filename.length()-1;
-	if ( ( filename[fnlen] == 'D' && filename[fnlen-1] == '_' ) || 
-	     ( filename[fnlen] == 'I' && filename[fnlen-1] == 'S' && filename[fnlen-2] == '_' ) )
-		return true;
-	else
-		return false;
+  int fnlen = filename.length()-1;
+  if ( ( filename[fnlen] == 'D' && filename[fnlen-1] == '_' ) ||
+       ( filename[fnlen] == 'I' && filename[fnlen-1] == 'S' && filename[fnlen-2] == '_' ) )
+    return true;
+  else
+    return false;
 }
 
 void check_separation( std::ifstream& file , const char& dummy )
 {
-	std::string line;
+  std::string line;
 
-	if ( dummy == '#' )	file >> line;
-	if ( line.length() != NUMBEROFPOUNDS-1 )
-	{
-		std::cout << "PINDEL2SAM_ERROR: bad number of #'s = " << line.length() << std::endl;
-		value = 1;
-	}
-	linenum++;
+  if ( dummy == '#' ) file >> line;
+  if ( line.length() != NUMBEROFPOUNDS-1 )
+  {
+    std::cout << "PINDEL2SAM_ERROR: bad number of #'s = " << line.length() << std::endl;
+    value = 1;
+  }
+  linenum++;
 }
 
 int read_config_file( const std::string& filename , std::map<std::string,std::string>& sampleMap , std::map<std::string,int>& outputMap )
 {
-	std::ifstream file( filename.c_str() );
-	int numsamples = 0;
+  std::ifstream file( filename.c_str() );
+  int numsamples = 0;
 
-	if ( file.good() )//successfully opened config file
-	{
-		std::cout << "\t\tOpened: " << filename << std::endl;
+  if ( file.good() )//successfully opened config file
+  {
+    std::cout << "\t\tOpened: " << filename << std::endl;
 
-		std::string name, sample, temp;
-		while ( file >> name >> temp >> sample )
-		{
-			for ( int c = 0; c < name.length(); c++ )
-			{
-				if ( (char)name[c] == '/' )
-					name[c] = '_';
-			}
-			sampleMap[sample] = name;
-			outputMap[name] = numsamples++;
-		}
+    std::string name, sample, temp;
+    while ( file >> name >> temp >> sample )
+    {
+      for ( int c = 0; c < name.length(); c++ )
+      {
+        if ( (char)name[c] == '/' )
+          name[c] = '_';
+      }
+      sampleMap[sample] = name;
+      outputMap[name] = numsamples++;
+    }
 
-		file.close();
-		std::cout << "\t\t\t\tClosed: " << filename << std::endl;
+    file.close();
+    std::cout << "\t\t\t\tClosed: " << filename << std::endl;
 
-		return numsamples;
-	}
-	else
-	{//Error opening config file
-		std::cout << "PINDEL2SAM_ERROR: could not open " << filename << std::endl;
+    return numsamples;
+  }
+  else
+  {//Error opening config file
+    std::cout << "PINDEL2SAM_ERROR: could not open " << filename << std::endl;
 
-		return numsamples;
-	}
+    return numsamples;
+  }
 }
 
 int read_fafai_file( const std::string& filename , struct header& h )
 {
-	std::ifstream file( filename.c_str() );
-	std::string chr, chrlen, temp;
-	int numrefs = 0;
+  std::ifstream file( filename.c_str() );
+  std::string chr, chrlen, temp;
+  int numrefs = 0;
 
-	if ( file.good() )
-	{
-		std::cout << "\t\tOpened: " << filename << std::endl;
+  if ( file.good() )
+  {
+    std::cout << "\t\tOpened: " << filename << std::endl;
 
-		h.top = "@HD\tVN:"+SAMVERSION+"\n";
-		while ( file >> chr >> chrlen >> temp >> temp >> temp )
-		{
-				h.chrLen[chr] = str2int( chrlen );
-				set_header_custom( h , chr );
-			numrefs++;
-		}
-		set_header_bottom( h );
+    h.top = "@HD\tVN:"+SAMVERSION+"\n";
+    while ( file >> chr >> chrlen >> temp >> temp >> temp )
+    {
+        h.chrLen[chr] = str2int( chrlen );
+        set_header_custom( h , chr );
+      numrefs++;
+    }
+    set_header_bottom( h );
 
-		file.close();
-		std::cout << "\t\t\t\tClose: " << filename << std::endl;
+    file.close();
+    std::cout << "\t\t\t\tClose: " << filename << std::endl;
 
-		return numrefs;
-	}
-	else
-	{//Error opening reference index file
-		std::cout << "PINDEL2SAM_ERROR: could not open " << filename << std::endl;
+    return numrefs;
+  }
+  else
+  {//Error opening reference index file
+    std::cout << "PINDEL2SAM_ERROR: could not open " << filename << std::endl;
 
-		return numrefs;
-	}
+    return numrefs;
+  }
 }
 
 void set_header_custom( struct header& h , const std::string& chr )
 {
-	h.custom += "@SQ\tSN:"+chr+"\tLN:"+int2str( h.chrLen[chr] )+"\n";
+  h.custom += "@SQ\tSN:"+chr+"\tLN:"+int2str( h.chrLen[chr] )+"\n";
 }
 
 void set_header_bottom( struct header& h )
 {
-	h.bottom = "@PG\tPN:Pindel\tVN:"+PINDELVERSION+"\n";
+  h.bottom = "@PG\tPN:Pindel\tVN:"+PINDELVERSION+"\n";
 }
 
 int set_pindel_fields( std::ifstream& file , struct pindel_fields& pid )
 {
-	std::string temp;
+  std::string temp;
 
-	pid.supports.clear();
+  pid.supports.clear();
 
-	file >> temp; //SVIndex
-	file >> pid.indelType >> pid.indelSize;
-	file >> temp; //NT
-	file >> pid.NT_size >> pid.NT_sequence;
-	if ( pid.NT_sequence.length()-2 != str2int( pid.NT_size ) )
-	{//Error NT sequence/size mismatch
-		std::cout << "PINDEL2SAM_ERROR: NT sequence/size mismatch ( " << pid.NT_sequence.length() << " ";
-		std::cout << pid.NT_size << " )\nSkipping support from line = " << linenum << std::endl;
-		std::getline( file , temp );
+  file >> temp; //SVIndex
+  file >> pid.indelType >> pid.indelSize;
+  file >> temp; //NT
+  file >> pid.NT_size >> pid.NT_sequence;
+  if ( pid.NT_sequence.length()-2 != str2int( pid.NT_size ) )
+  {//Error NT sequence/size mismatch
+    std::cout << "PINDEL2SAM_ERROR: NT sequence/size mismatch ( " << pid.NT_sequence.length() << " ";
+    std::cout << pid.NT_size << " )\nSkipping support from line = " << linenum << std::endl;
+    std::getline( file , temp );
 
-		return 1;
-	}
-	file >> temp; //Chr
-	file >> pid.chrID;
-	file >> temp; //BP
-	file >> pid.BPLeft_plus_one;
-	file >> temp >> temp >> temp >> temp >> temp; //BPright BP_range left right NumSupports
-	file >> pid.NumSupports;
-	file >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp;
-	file >> pid.NumSupSamples;
-	if ( str2int( pid.NumSupSamples ) > NUMBEROFSAMPLES )
-	{//Error number of samples mismatch
-		std::cout << "PINDEL2SAM_ERROR: Number of samples mismatch\nSkipping supports from line = " << linenum << std::endl;
-		std::getline( file , temp );
+    return 1;
+  }
+  file >> temp; //Chr
+  file >> pid.chrID;
+  file >> temp; //BP
+  file >> pid.BPLeft_plus_one;
+  file >> temp >> temp >> temp >> temp >> temp; //BPright BP_range left right NumSupports
+  file >> pid.NumSupports;
+  file >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp >> temp;
+  file >> pid.NumSupSamples;
+  if ( str2int( pid.NumSupSamples ) > NUMBEROFSAMPLES )
+  {//Error number of samples mismatch
+    std::cout << "PINDEL2SAM_ERROR: Number of samples mismatch\nSkipping supports from line = " << linenum << std::endl;
+    std::getline( file , temp );
 
-		return 2;
-	}
+    return 2;
+  }
 
-	std::getline( file , temp ); //read rest of line
-	linenum++;
+  std::getline( file , temp ); //read rest of line
+  linenum++;
 
-	return 0;
-	//check specific header sequences
+  return 0;
+  //check specific header sequences
 }
 
 int set_reference_detail( std::ifstream& file , struct pindel_fields& pid )
 {
-	std::string tempL, tempR;
+  std::string tempL, tempR;
 
-	linenum++;
-	if ( str2int( pid.NT_size ) > 0 ) //gap in reference
-	{
-		file >> tempL; //reads in left half
-		std::getline( file , tempR ); //reads in right half
+  linenum++;
+  if ( str2int( pid.NT_size ) > 0 ) //gap in reference
+  {
+    file >> tempL; //reads in left half
+    std::getline( file , tempR ); //reads in right half
 
-		return tempL.length();
-	}
-	else //no gap in reference
-	{
-		std::getline( file , tempL ); //no info to get, eat whole line
+    return tempL.length();
+  }
+  else //no gap in reference
+  {
+    std::getline( file , tempL ); //no info to get, eat whole line
 
-		return tempL.length();
-	}
+    return tempL.length();
+  }
 }
 
-void field_conversion( struct pindel_fields& pid , int isup , struct sam_fields& sam )
-{
-	bool iscomplex = false;
-	sam.QNAME = pid.supports[isup].readBarcode;
-	sam.FLAG = "2";
-	sam.RNAME = pid.chrID;
-	sam.POS = determine_POS( pid.BPLeft_plus_one , pid.supports[isup].leftOfIndel );
-	sam.MAPQ = "60"; //filler value
-	sam.CIGAR = create_CIGAR( pid.indelType , pid.indelSize , pid.NT_size , pid.supports[isup].readSequence.length() , pid.supports[isup].leftOfIndel , iscomplex );
-	sam.RNEXT = "*"; //"*" or "=" ("set as '=' if RNEXT is identical RNAME"...should be = for set between summary lines, right?)
-	sam.PNEXT = "0"; //"0" or "This field equals POS at the primary line of the next read. If PNEXT is 0, no assumptions can be made on RNEXT and bit 0x20")
-	sam.TLEN = "0"; //"0" for "single-segment template or when the information is unavailable." "If all segments are mapped to the same reference, the unsigned observed template length equals the number of bases from the leftmost mapped base to the rightmost mapped base."
-	sam.SEQ = pid.supports[isup].readSequence; //pid.sequence minus white-space
-	sam.QUAL = "*"; //"*" "ASCII of base QUALity plus 33...This field can be a '*' when quality is not stored. If not a '*', SEQ must not be a '*' and the length of the quality string ought to equal the length of SEQ."
-	sam.optional = "PG:Z:Pindel"; 
-	if ( iscomplex )	sam.optional += ",CI:Z:"+sam.CIGAR;
+void field_conversion( struct pindel_fields& pid, int isup, struct sam_fields& sam ) {
+  int flag = 2;
+  std::cerr << pid.supports[isup].sense << "\n";
+  if ( pid.supports[isup].sense == "-" ) {
+    std::cerr << " -- reverse\n";
+    flag |= 16;
+  }
+
+  bool iscomplex = false;
+  sam.QNAME = pid.supports[isup].readBarcode;
+  sam.FLAG = patch::to_string(flag);
+  sam.RNAME = pid.chrID;
+  sam.POS = determine_POS( pid.BPLeft_plus_one , pid.supports[isup].leftOfIndel );
+  sam.MAPQ = "60"; //filler value
+  sam.CIGAR = create_CIGAR( pid.indelType , pid.indelSize , pid.NT_size , pid.supports[isup].readSequence.length() , pid.supports[isup].leftOfIndel , iscomplex );
+  sam.RNEXT = "*"; //"*" or "=" ("set as '=' if RNEXT is identical RNAME"...should be = for set between summary lines, right?)
+  sam.PNEXT = "0"; //"0" or "This field equals POS at the primary line of the next read. If PNEXT is 0, no assumptions can be made on RNEXT and bit 0x20")
+  sam.TLEN = "0"; //"0" for "single-segment template or when the information is unavailable." "If all segments are mapped to the same reference, the unsigned observed template length equals the number of bases from the leftmost mapped base to the rightmost mapped base."
+  sam.SEQ = pid.supports[isup].readSequence; //pid.sequence minus white-space
+  sam.QUAL = "*"; //"*" "ASCII of base QUALity plus 33...This field can be a '*' when quality is not stored. If not a '*', SEQ must not be a '*' and the length of the quality string ought to equal the length of SEQ."
+  sam.optional = "PG:Z:Pindel";
+  if ( iscomplex )  sam.optional += ",CI:Z:"+sam.CIGAR;
 }
 
-std::string create_CIGAR( std::string type , std::string size , std::string NTsize , int readLength , int readIndelLeftPos , bool& iscomplex )
-{
-	std::string cigar;
-	std::string finalM;
+std::string create_CIGAR( std::string type , std::string size , std::string NTsize , int readLength , int readIndelLeftPos , bool& iscomplex ) {
+  std::string cigar;
+  std::string finalM;
 
-	cigar = int2str( readIndelLeftPos ) + "M";
-	if ( type[0] == 'D' && str2int( NTsize ) > 0 ) //complex indel
-	{
-		cigar += NTsize+"I"+size+"D";
-		finalM = int2str( readLength - readIndelLeftPos - str2int( NTsize ) ); //total-left-insert = right
-		cigar += finalM+"M";
+  cigar = int2str( readIndelLeftPos ) + "M";
+  if ( type[0] == 'D' && str2int( NTsize ) > 0 ) //complex indel
+  {
+    cigar += NTsize+"I"+size+"D";
+    finalM = int2str( readLength - readIndelLeftPos - str2int( NTsize ) ); //total-left-insert = right
+    cigar += finalM+"M";
 
-		iscomplex = true;
+    iscomplex = true;
 
-		return cigar;
-	}
-	else
-	{
-		if ( str2int( NTsize ) > 0 ) //if insertion
-		{
-			cigar += NTsize + "I";
-			finalM = int2str( readLength - readIndelLeftPos - str2int( NTsize ) );
-		}
-		if ( type[0] == 'D' ) //if deletion
-		{
-			cigar += size+type; //deletion size
-			finalM = int2str( readLength - readIndelLeftPos );
-		}
+    return cigar;
+  }
+  else
+  {
+    if ( str2int( NTsize ) > 0 ) //if insertion
+    {
+      cigar += NTsize + "I";
+      finalM = int2str( readLength - readIndelLeftPos - str2int( NTsize ) );
+    }
+    if ( type[0] == 'D' ) //if deletion
+    {
+      cigar += size+type; //deletion size
+      finalM = int2str( readLength - readIndelLeftPos );
+    }
 
-		return cigar += finalM+"M";
-	}
+    return cigar += finalM+"M";
+  }
 }
 
 std::string determine_POS( const std::string indelPos , const int leftof )
 {
-	return int2str( str2int( indelPos ) - leftof + 1 );
+  return int2str( str2int( indelPos ) - leftof + 1 );
 }
 
-void set_support( std::ifstream& file , int Isize , struct support_data& support , std::map<std::string,std::string>& sm , std::map<std::string,int>& om , const int lrl )
-{
-	char dummy;
-	int eat = 0;
-	std::string line, temppm, tempn1, tempn2;
-	std::string readLeft, readRight;
-	std::map<std::string,int>::iterator omitlast = om.end();
+void set_support( std::ifstream& file , int Isize , struct support_data& support , std::map<std::string,std::string>& sm , std::map<std::string,int>& om , const int lrl ) {
+  char dummy;
+  int eat = 0;
+  std::string line, temppm, tempn1, tempn2;
+  std::string readLeft, readRight;
+  std::map<std::string,int>::iterator omitlast = om.end();
 
-	if ( Isize > 0 ) //read is continuous
-	{
-		file >> std::noskipws >> dummy;
-		while ( isspace( dummy ) ) //need white space to get POS
-		{
-			file >> dummy;
-			eat++;
-		}
-		support.leftOfIndel = lrl -eat;
-		file >> std::skipws >> line;
-		support.readSequence = dummy+line;
-	}
-	else //read has gap
-	{
-		file >> readLeft >> readRight;
-		support.leftOfIndel = readLeft.length();
-		support.readSequence = readLeft+readRight;
-	}//if has gap
+  if ( Isize > 0 ) { // read is continuous
+    file >> std::noskipws >> dummy;
+    while ( isspace( dummy ) ) { // need white space to get POS
+      file >> dummy;
+      eat++;
+    }
+    support.leftOfIndel = lrl - eat;
+    file >> std::skipws >> line;
+    support.readSequence = dummy + line;
+  }
+  else { //read has gap
+    file >> readLeft >> readRight;
+    support.leftOfIndel = readLeft.length();
+    support.readSequence = readLeft + readRight;
+  }
 
-	file >> temppm >> tempn1 >> tempn2; //+- num num
-	file >> support.readBAMsource;
-	if ( om.find( sm[support.readBAMsource] ) == omitlast ) //find returns om.end() if key not found
-	{//Error readBAMsource not in the map
-		std::cout << "PINDEL2SAM_ERROR: readBAMsource not in the map: ";
-		std::cout << support.readBAMsource << "\n\tbad line read as ";
-		std::cout << support.readSequence << "\t" << temppm << "\t";
-		std::cout << tempn1 << "\t" << tempn2 << "\t" << support.readBAMsource;
-		std::cout << "\nSkipping support for this read from line = ";
-		std::cout << linenum << std::endl;
-		std::getline( file , line );
+  file >> temppm >> tempn1 >> tempn2; //+- num num
+  file >> support.readBAMsource;
+  support.sense = temppm;
+  if ( om.find( sm[support.readBAMsource] ) == omitlast ) { //find returns om.end() if key not found
+    // Error readBAMsource not in the map
+    std::cout << "PINDEL2SAM_ERROR: readBAMsource not in the map: ";
+    std::cout << support.readBAMsource << "\n\tbad line read as ";
+    std::cout << support.readSequence << "\t" << temppm << "\t";
+    std::cout << tempn1 << "\t" << tempn2 << "\t" << support.readBAMsource;
+    std::cout << "\nSkipping support for this read from line = ";
+    std::cout << linenum << std::endl;
+    std::getline( file , line );
 
-		value = 3;
-	}
-	else
-	{
-		file >> support.readBarcode;
+    value = 3;
+  }
+  else {
+    file >> support.readBarcode;
 
-		support.readBarcode.erase( 0 , 1 ); //removes @ from beginning
-		support.readBarcode.erase( (size_t)(support.readBarcode.length()-2) , 2 ); //removes /1 or /2 from ending
+    support.readBarcode.erase( 0 , 1 ); //removes @ from beginning
+    support.readBarcode.erase( (size_t)(support.readBarcode.length()-2) , 2 ); //removes /1 or /2 from ending
 
-		std::getline( file , line ); //finish line to advance
+    std::getline( file , line ); //finish line to advance
 
-		value = 0;
-	}
+    value = 0;
+  }
 }
 
-void set_supports( std::ifstream& file , struct pindel_fields& pid , std::map<std::string,std::string>& sm , std::map<std::string,int>& om , const int lrl )
-{
-	struct support_data sd;
-	int eat;
-	std::string line, readLeft, readRight;
-	bool hasgap;
+void set_supports( std::ifstream& file , struct pindel_fields& pid , std::map<std::string,std::string>& sm , std::map<std::string,int>& om , const int lrl ) {
+  struct support_data sd;
+  int eat;
+  std::string line, readLeft, readRight;
+  bool hasgap;
 
-	for ( unsigned supportIndex = 0; supportIndex < str2int( pid.NumSupports ); supportIndex++ )
-	{
-		clear_support_data( sd ); //support data
-		set_support( file , str2int( pid.NT_size ) , sd , sm , om , lrl );
-		linenum++;
-		if ( value == 0 ) //Support was read successfully
-		{
-			pid.supports.push_back( sd );
-		}
-		else 
-		{//Error from set_suport skip to end of supports
-			std::getline( file , line ); //could try another method of finding the next good line
-			linenum++;
-			supportIndex++;
-		}
-	}
+  for ( unsigned supportIndex = 0; supportIndex < str2int( pid.NumSupports ); supportIndex++ ) {
+    clear_support_data( sd ); //support data
+    set_support( file , str2int( pid.NT_size ) , sd , sm , om , lrl );
+    linenum++;
+    if ( value == 0 ) { //Support was read successfully
+      pid.supports.push_back( sd );
+    }
+    else {//Error from set_suport skip to end of supports
+      std::getline( file , line ); //could try another method of finding the next good line
+      linenum++;
+      supportIndex++;
+    }
+  }
 }
 
 void print_update( int& next )
 {
-	if ( linenum == 0 )
-		std::cout << "\t\t\tConverting.\n";
-	else if ( linenum >= next )
-	{
-		std::cout << "\t\t\tStill converting. At line " << linenum << "." << std::endl;
-		next += UPDATEFREQUENCY;
-	}
+  if ( linenum == 0 )
+    std::cout << "\t\t\tConverting.\n";
+  else if ( linenum >= next )
+  {
+    std::cout << "\t\t\tStill converting. At line " << linenum << "." << std::endl;
+    next += UPDATEFREQUENCY;
+  }
 }
 
 void print_header( const struct header& h )
 {
-	std::cout << h.top << h.custom << h.bottom;
+  std::cout << h.top << h.custom << h.bottom;
 }
 
 void print_pindel_fields( const struct pindel_fields& pid )
 {
-	std::cout << pid.indelType << '\t' << pid.indelSize << '\t';
-	std::cout << pid.NT_size << pid.NT_sequence << '\t';
-	std::cout << pid.chrID << '\t' << pid.BPLeft_plus_one << '\t';
-	std::cout << pid.NumSupports << '\t' << pid.NumSupSamples << std::endl;
-	print_supports( pid.supports );
+  std::cout << pid.indelType << '\t' << pid.indelSize << '\t';
+  std::cout << pid.NT_size << pid.NT_sequence << '\t';
+  std::cout << pid.chrID << '\t' << pid.BPLeft_plus_one << '\t';
+  std::cout << pid.NumSupports << '\t' << pid.NumSupSamples << std::endl;
+  print_supports( pid.supports );
 }
 
 void print_support_with_summary( const struct pindel_fields& pid , int isup )
 {
-	std::cout << pid.indelType << '\t' << pid.indelSize << '\t';
-	std::cout << pid.NT_size << pid.NT_sequence << '\t';
-	std::cout << pid.chrID << '\t' << pid.BPLeft_plus_one << '\t';
-	std::cout << pid.NumSupports << '\t' << pid.NumSupSamples << std::endl;
-	print_support_data( pid.supports[isup] );
+  std::cout << pid.indelType << '\t' << pid.indelSize << '\t';
+  std::cout << pid.NT_size << pid.NT_sequence << '\t';
+  std::cout << pid.chrID << '\t' << pid.BPLeft_plus_one << '\t';
+  std::cout << pid.NumSupports << '\t' << pid.NumSupSamples << std::endl;
+  print_support_data( pid.supports[isup] );
 }
 
 void print_support_data( const struct support_data& sd )
 {
-	std::cout << sd.leftOfIndel << '\t' << sd.readSequence << '\t';
-	std::cout << sd.readBAMsource << '\t' << sd.readBarcode << '\n';
+  std::cout << sd.leftOfIndel << '\t' << sd.readSequence << '\t';
+  std::cout << sd.readBAMsource << '\t' << sd.readBarcode << '\n';
 }
 
 void print_supports( const std::vector<struct support_data>& supports )
 {
-	int i = 0;
-	while ( i < supports.size() )
-	{
-		print_support_data( supports[i] );
-		i++;
-	}
+  int i = 0;
+  while ( i < supports.size() )
+  {
+    print_support_data( supports[i] );
+    i++;
+  }
 }
 
 void print_sam( const struct sam_fields& sam )
 {
-	std::cout << sam.QNAME << "\t" << sam.FLAG << "\t" << sam.RNAME << "\t";
-	std::cout << sam.POS << "\t" << sam.MAPQ << "\t" << sam.CIGAR << "\t";
-	std::cout << sam.RNEXT << "\t" << sam.PNEXT << "\t" << sam.TLEN << "\t";
-	std::cout << sam.SEQ << "\t" << sam.QUAL << "\t" << sam.optional << std::endl;
+  std::cout << sam.QNAME << "\t" << sam.FLAG << "\t" << sam.RNAME << "\t";
+  std::cout << sam.POS << "\t" << sam.MAPQ << "\t" << sam.CIGAR << "\t";
+  std::cout << sam.RNEXT << "\t" << sam.PNEXT << "\t" << sam.TLEN << "\t";
+  std::cout << sam.SEQ << "\t" << sam.QUAL << "\t" << sam.optional << std::endl;
 }
 
 void clear_support_data( struct support_data& sd )
 {
-	sd.leftOfIndel = 0;
-	sd.readSequence = "";
-	sd.readBAMsource = "";
-	sd.readBarcode = "";
+  sd.leftOfIndel = 0;
+  sd.readSequence = "";
+  sd.readBAMsource = "";
+  sd.readBarcode = "";
 }
 
 void save_header( const struct header& h , std::map<std::string,std::string>& sampleMap )
 {
-	std::string outname;
-	std::fstream file;
-	for ( std::map<std::string,std::string>::iterator sit = sampleMap.begin(); sit!=sampleMap.end(); ++sit )
-	{
-		outname = outputDirectoryName+( sit->second )+".sam";
-		file.open( outname.c_str() );
-		if ( file.good() ) //file existed
-		{
-			std::cout << "PINDEL2SAM_WARNING: File exists: " << outname;
-			std::cout << "\n\tAssuming header present. Will append to existing files.\n";
-			file.close();
-		}
-		else //file did not exist
-		{
-			file.open( outname.c_str() , std::ios::out );
-			if ( file.is_open() ) //new file
-			{
-				std::cout << "\t\tInitializing output file: " << outname << std::endl;
-				file << h.top << h.custom << h.bottom;
-				file.close();
-			}
-			else //Error opening file
-				std::cout << "PINDEL2SAM_ERROR: could not open " << outname << std::endl;
-		}
-	}//for each sample
+  std::string outname;
+  std::fstream file;
+  for ( std::map<std::string,std::string>::iterator sit = sampleMap.begin(); sit!=sampleMap.end(); ++sit )
+  {
+    outname = outputDirectoryName+( sit->second )+".sam";
+    file.open( outname.c_str() );
+    if ( file.good() ) //file existed
+    {
+      std::cout << "PINDEL2SAM_WARNING: File exists: " << outname;
+      std::cout << "\n\tAssuming header present. Will append to existing files.\n";
+      file.close();
+    }
+    else //file did not exist
+    {
+      file.open( outname.c_str() , std::ios::out );
+      if ( file.is_open() ) //new file
+      {
+        std::cout << "\t\tInitializing output file: " << outname << std::endl;
+        file << h.top << h.custom << h.bottom;
+        file.close();
+      }
+      else //Error opening file
+        std::cout << "PINDEL2SAM_ERROR: could not open " << outname << std::endl;
+    }
+  }//for each sample
 }
 
 void save_sam( const struct sam_fields& sam , const std::string& filename )
 {
-	std::fstream file;
-	std::string outname = outputDirectoryName+filename+".sam";
-	file.open( outname.c_str() , std::ios::out | std::ios::app );
-	
-	if ( file.good() ) //file exists and opened
-	{
-		file << sam.QNAME << "\t" << sam.FLAG << "\t" << sam.RNAME << "\t";
-		file << sam.POS << "\t" << sam.MAPQ << "\t" << sam.CIGAR << "\t";
-		file << sam.RNEXT << "\t" << sam.PNEXT << "\t" << sam.TLEN << "\t";
-		file << sam.SEQ << "\t" << sam.QUAL << "\t" << sam.optional << std::endl;
-		file.close();
-	}
-	else
-	{//Error opening file
-		std::cout << "PINDEL2SAM_ERROR: Could not write to " << outname << std::endl;
-	}
+  std::fstream file;
+  std::string outname = outputDirectoryName+filename+".sam";
+  file.open( outname.c_str() , std::ios::out | std::ios::app );
+
+  if ( file.good() ) //file exists and opened
+  {
+    file << sam.QNAME << "\t" << sam.FLAG << "\t" << sam.RNAME << "\t";
+    file << sam.POS << "\t" << sam.MAPQ << "\t" << sam.CIGAR << "\t";
+    file << sam.RNEXT << "\t" << sam.PNEXT << "\t" << sam.TLEN << "\t";
+    file << sam.SEQ << "\t" << sam.QUAL << "\t" << sam.optional << std::endl;
+    file.close();
+  }
+  else
+  {//Error opening file
+    std::cout << "PINDEL2SAM_ERROR: Could not write to " << outname << std::endl;
+  }
 }
 
-void write_files( struct pindel_fields& pid , std::map<std::string,std::string>& sm , std::map<std::string,int>& om )
-{
-	struct support_data sd;
-	std::vector<struct support_data> sds;
-	std::map<std::string,int>::iterator omit = om.begin();
-	struct sam_fields sam;
-	
-	for ( unsigned sampleIndex = 0; sampleIndex < str2int( pid.NumSupSamples ); sampleIndex++ )
-	{
-		for ( unsigned supportIndex = 0; supportIndex < str2int( pid.NumSupports ); supportIndex++ )
-		{
-			if ( om[sm[pid.supports[supportIndex].readBAMsource]] == omit->second )
-			{
-				field_conversion( pid , supportIndex , sam );
-				if ( sam.CIGAR.length() > 0 )
-					save_sam( sam , sm[pid.supports[supportIndex].readBAMsource] );
-			}//if sample filename match
-		}//for each support
-		++omit; //advance through map
-	}//for each output file
+void write_files( struct pindel_fields& pid, std::map<std::string,std::string>& sm, std::map<std::string,int>& om ) {
+  std::map<std::string,int>::iterator omit = om.begin();
+  struct sam_fields sam;
+
+  for ( unsigned sampleIndex = 0; sampleIndex < str2int( pid.NumSupSamples ); sampleIndex++ ) {
+    for ( unsigned supportIndex = 0; supportIndex < str2int( pid.NumSupports ); supportIndex++ ) {
+      if ( om[sm[pid.supports[supportIndex].readBAMsource]] == omit->second ) {
+        field_conversion( pid, supportIndex, sam );
+        if ( sam.CIGAR.length() > 0 ) {
+          save_sam( sam, sm[pid.supports[supportIndex].readBAMsource] );
+        }
+      } //if sample filename match
+    } //for each support
+    ++omit; //advance through map
+  } //for each output file
 }

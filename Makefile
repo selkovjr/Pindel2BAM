@@ -1,4 +1,4 @@
-# This is the Makefile for the program that 
+# This is the Makefile for the program that
 # converts Pindel output into a SAM file.
 # 14 July 2014 -Adam D Scott
 
@@ -6,13 +6,12 @@
 CC=g++
 
 #CFLAGS is(are) compiler flags
-CFLAGS=-c -Wall
+CFLAGS=-g -Wall
 
-p2s: pindel2sam.o
-	$(CC) pindel2sam.o -o pin2sam
+all: pin2sam
 
-p2s.o: pindel2sam.cpp
-	$(CC) $(CFLAGS) pindel2sam.cpp
+pin2sam: pindel2sam.cpp
+	$(CC) $(CFLAGS) pindel2sam.cpp -o pin2sam
 
 clean:
-	rm pindel2sam.o pin2sam
+	rm pin2sam

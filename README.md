@@ -7,16 +7,15 @@ This is a hack on top of original
 it does two things that the upstream tool does not do:
 
 * preserves read orientation in flags
-* fills the RG tag with sample name
+* uses sample name to fill the RG tag
 
 The missing MD tag can be filled externally with
 
     samtools fillmd
 
-Althow it has BAM in its name, this tool does not make BAM. It generates SAM files.
+Althow this repo has 'BAM' in its name, the tool does not make BAMs. It generates SAM files.
 
 Original README follows.
-----
 
 ##Compiling
 To convert from Pindel to SAM, first compile pindel2sam.cpp with the

@@ -1,8 +1,25 @@
-#Pindel2BAM 
-Convert [Pindel](https://github.com/ding-lab/pindel2) output into BAM format.  
+#Pindel2BAM
+Convert [Pindel](https://github.com/ding-lab/pindel2) output into SAM format.
+
+This is a hack on top of original
+[Pindel2BAM](https://github.com/ding-lab/pindel2). Its purpose is to preserve
+(or fill in) a few SAM tags required by BAM viewers and other tools. Currently
+it does two things that the upstream tool does not do:
+
+* preserves read orientation in flags
+* fills the RG tag with sample name
+
+The missing MD tag can be filled externally with
+
+    samtools fillmd
+
+Althow it has BAM in its name, this tool does not make BAM. It generates SAM files.
+
+Original README follows.
+----
 
 ##Compiling
-To convert from Pindel to BAM, first compile pindel2sam.cpp with the 
+To convert from Pindel to SAM, first compile pindel2sam.cpp with the
 provided Make file. Pindel2BAM can compile with gcc version 4.4.3.
 
 ##Usage
@@ -20,9 +37,9 @@ appended). The SAM files are written into the desired output
 directory and converted to BAM files. Finally, the BAM files are sorted
 and indexed using the following samtools commands.
 
-samtools view -bS convertedfilename.sam > bamfilename.bam  
-samtools sort bamfilename.bam sortedbamfilename.bam  
-samtools index sortedbamfilename.bam  
+samtools view -bS convertedfilename.sam > bamfilename.bam
+samtools sort bamfilename.bam sortedbamfilename.bam
+samtools index sortedbamfilename.bam
 
 The sorted files can then be used in a genome viewer such as IGV as normal.
 
@@ -35,13 +52,13 @@ Currently, filler data exists for the following SAM fields:
 * RNEXT = *
 * PNEXT = 0
 * TLEN = 0
-* QUAL = *  
+* QUAL = *
 
 If the converter pin2sam has not been compiled, then Pindel2BAM will
-compile it automatically.  
+compile it automatically.
 
 If your bam file names listed in the config file have a directory prefix,
-then the / will be turned into _ for the output file names.  
+then the / will be turned into _ for the output file names.
 
 If output files already exist, Pindel2SAM will append any data
 within the _D and _SI files to the existing output .sam files.

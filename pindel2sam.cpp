@@ -116,6 +116,7 @@
  * HAVE_SYS_NDIR_H according to the files found.
  */
 #include <string>     // std::string, std::to_string
+#include <ios>        // std::streampos
 #include <sstream>
 
 namespace patch {
@@ -389,10 +390,7 @@ static void _setdirname (struct DIR *dirp);
  * </table>
  * </function>
  */
-static DIR *
-opendir(
-    const char *dirname)
-{
+static DIR * opendir( const char *dirname) {
   DIR *dirp;
   assert (dirname != NULL);
 
@@ -768,7 +766,7 @@ void set_support( std::ifstream& , int , struct support_data& , std::map<std::st
 void set_supports( std::ifstream& , struct pindel_fields& , std::map<std::string,std::string>& , std::map<std::string,int>& , const int ); //fills supports field of pindel_field struct
 
 void field_conversion( struct pindel_fields& , int , struct sam_fields& );
-std::string create_CIGAR( std::string , std::string , std::string , int , int , bool& ); //indelType, indelSize, NT_size, readLength, leftIndelPos = BPLeft_plus_one - POS + 1, do true CIGAR
+std::string create_CIGAR( pindel_fields pid, int isup, std::string , std::string , int , int , bool& ); //indelType, indelSize, NT_size, readLength, leftIndelPos = BPLeft_plus_one - POS + 1, do true CIGAR
 std::string determine_POS( const std::string , const int ); //leftReadLength, BPLeft_plus_one
 
 void print_update( int& );
@@ -783,7 +781,7 @@ void clear_support_data( struct support_data& ); //clears all data in support_da
 void clear_supports( std::vector<struct support_data>& );
 
 void save_header( const struct header& , std::map<std::string,std::string>& );
-void save_sam( const struct sam_fields& , const std::string& );
+void save_sam( const struct sam_fields& , const std::string&, const std::string& sample_name );
 void write_files( struct pindel_fields& , std::map<std::string,std::string>& , std::map<std::string,int>& ); //writes the Pindel conversion to SAM
 
 struct pindel_fields {
@@ -795,12 +793,14 @@ struct pindel_fields {
   std::string BPLeft_plus_one;
   std::string NumSupports;
   std::string NumSupSamples;
+  std::string ref_line;
   std::vector<struct support_data> supports;
 };
 
 struct support_data {
   int leftOfIndel;
   std::string readSequence;
+  std::string alignedSequence;
   std::string readBAMsource;
   std::string readBarcode;
   std::string sense;
@@ -828,8 +828,7 @@ struct header {
   std::map<std::string,int> chrLen; //if need to track references within file
 };
 
-int main( int argc, char* argv[] )
-{
+int main( int argc, char* argv[] ) {
 /* TAKE INPUTS FROM COMMAND LINE: PINDEL DATA FILE, PINDEL CONFIG FILE */
 //  handleInputs(argc,argv,first_line,last_line);
 
@@ -874,6 +873,7 @@ int main( int argc, char* argv[] )
   while ( indir = readdir( dirp ) ) //directory position returns 0 when done
   {
     pindelFilename = (std::string)indir->d_name;
+    std::cerr << "pindelFilename: " << pindelFilename << "\n";
     pFnlen = pindelFilename.length()-1;
     if ( check_ending( pindelFilename ) ) //checks for _D & _SI
     {
@@ -1085,21 +1085,22 @@ int set_pindel_fields( std::ifstream& file , struct pindel_fields& pid )
   //check specific header sequences
 }
 
-int set_reference_detail( std::ifstream& file , struct pindel_fields& pid )
-{
+int set_reference_detail( std::ifstream& file , struct pindel_fields& pid ) {
   std::string tempL, tempR;
 
   linenum++;
-  if ( str2int( pid.NT_size ) > 0 ) //gap in reference
-  {
-    file >> tempL; //reads in left half
-    std::getline( file , tempR ); //reads in right half
+  if ( str2int( pid.NT_size ) > 0 ) { // gap in reference
+    file >> tempL; // reads in left half
+    std::getline( file , tempR ); // reads in right half
+    pid.ref_line = tempL + tempR;
+    // std::cerr << "ref_line:  " << pid.ref_line << "\n";
 
     return tempL.length();
   }
-  else //no gap in reference
-  {
-    std::getline( file , tempL ); //no info to get, eat whole line
+  else { // no gap in reference
+    std::getline( file , tempL ); // no info to get, eat whole line
+    pid.ref_line = tempL;
+    // std::cerr << "ref_line:  " << pid.ref_line << "\n";
 
     return tempL.length();
   }
@@ -1107,9 +1108,7 @@ int set_reference_detail( std::ifstream& file , struct pindel_fields& pid )
 
 void field_conversion( struct pindel_fields& pid, int isup, struct sam_fields& sam ) {
   int flag = 2;
-  std::cerr << pid.supports[isup].sense << "\n";
   if ( pid.supports[isup].sense == "-" ) {
-    std::cerr << " -- reverse\n";
     flag |= 16;
   }
 
@@ -1119,50 +1118,90 @@ void field_conversion( struct pindel_fields& pid, int isup, struct sam_fields& s
   sam.RNAME = pid.chrID;
   sam.POS = determine_POS( pid.BPLeft_plus_one , pid.supports[isup].leftOfIndel );
   sam.MAPQ = "60"; //filler value
-  sam.CIGAR = create_CIGAR( pid.indelType , pid.indelSize , pid.NT_size , pid.supports[isup].readSequence.length() , pid.supports[isup].leftOfIndel , iscomplex );
+  sam.CIGAR = create_CIGAR( pid, isup, pid.indelSize , pid.NT_size , pid.supports[isup].readSequence.length() , pid.supports[isup].leftOfIndel , iscomplex );
   sam.RNEXT = "*"; //"*" or "=" ("set as '=' if RNEXT is identical RNAME"...should be = for set between summary lines, right?)
   sam.PNEXT = "0"; //"0" or "This field equals POS at the primary line of the next read. If PNEXT is 0, no assumptions can be made on RNEXT and bit 0x20")
   sam.TLEN = "0"; //"0" for "single-segment template or when the information is unavailable." "If all segments are mapped to the same reference, the unsigned observed template length equals the number of bases from the leftmost mapped base to the rightmost mapped base."
   sam.SEQ = pid.supports[isup].readSequence; //pid.sequence minus white-space
   sam.QUAL = "*"; //"*" "ASCII of base QUALity plus 33...This field can be a '*' when quality is not stored. If not a '*', SEQ must not be a '*' and the length of the quality string ought to equal the length of SEQ."
   sam.optional = "PG:Z:Pindel";
-  if ( iscomplex )  sam.optional += ",CI:Z:"+sam.CIGAR;
+  if ( iscomplex )  sam.optional += ",CI:Z:" + sam.CIGAR;
 }
 
-std::string create_CIGAR( std::string type , std::string size , std::string NTsize , int readLength , int readIndelLeftPos , bool& iscomplex ) {
+std::string create_CIGAR( pindel_fields pid, int isup, std::string size, std::string NTsize, int readLength, int readIndelLeftPos, bool& iscomplex ) {
   std::string cigar;
   std::string finalM;
+  /* calculating from picture line
+  std::string op, previous_op;
+
+  int count = 0;
+  int start = 0;
+  while (pid.supports[isup].alignedSequence[start] == ' ') {
+    start++;
+  }
+  for (int i = start; i < pid.supports[isup].alignedSequence.length(); i++) {
+    if (pid.ref_line[i] != ' ' and pid.supports[isup].alignedSequence[i] != ' ') {
+      op = "M";
+    }
+    else if (pid.ref_line[i] == ' ' and pid.supports[isup].alignedSequence[i] != ' ') {
+      op = "I";
+    }
+    else if (pid.ref_line[i] != ' ' and pid.supports[isup].alignedSequence[i] == ' ') {
+      op = "D";
+    }
+    else {
+      break;
+    }
+
+    if (i == start ) {
+      previous_op = op;
+    }
+
+    if (op == previous_op) {
+      count++;
+    }
+    else {
+      cigar +=int2str(count) + previous_op;
+      previous_op = op;
+      count = 1;
+    }
+  }
+  cigar +=int2str(count) + previous_op;
+  */
 
   cigar = int2str( readIndelLeftPos ) + "M";
-  if ( type[0] == 'D' && str2int( NTsize ) > 0 ) //complex indel
-  {
-    cigar += NTsize+"I"+size+"D";
-    finalM = int2str( readLength - readIndelLeftPos - str2int( NTsize ) ); //total-left-insert = right
+  if ( pid.indelType[0] == 'D' && str2int( NTsize ) > 0 ) { // complex indel
+    cigar += NTsize + "I" + size + "D";
+    finalM = int2str( readLength - readIndelLeftPos - str2int( NTsize ) ); // total-left-insert = right
     cigar += finalM+"M";
 
     iscomplex = true;
 
     return cigar;
   }
-  else
-  {
-    if ( str2int( NTsize ) > 0 ) //if insertion
-    {
+  else {
+    if ( str2int( NTsize ) > 0 ) { //if insertion
       cigar += NTsize + "I";
       finalM = int2str( readLength - readIndelLeftPos - str2int( NTsize ) );
     }
-    if ( type[0] == 'D' ) //if deletion
-    {
-      cigar += size+type; //deletion size
+    if ( pid.indelType[0] == 'D' ) { // if deletion
+      cigar += size + pid.indelType; // deletion size
       finalM = int2str( readLength - readIndelLeftPos );
     }
 
-    return cigar += finalM+"M";
+    return cigar += finalM + "M";
   }
+
+  /* calculating from picture line
+  if ( pid.indelType[0] == 'D' && str2int( NTsize ) > 0 ) { // complex indel
+    iscomplex = true;
+  }
+
+  return cigar;
+  */
 }
 
-std::string determine_POS( const std::string indelPos , const int leftof )
-{
+std::string determine_POS( const std::string indelPos , const int leftof ) {
   return int2str( str2int( indelPos ) - leftof + 1 );
 }
 
@@ -1172,6 +1211,8 @@ void set_support( std::ifstream& file , int Isize , struct support_data& support
   std::string line, temppm, tempn1, tempn2;
   std::string readLeft, readRight;
   std::map<std::string,int>::iterator omitlast = om.end();
+
+  std::streampos line_start = file.tellg();
 
   if ( Isize > 0 ) { // read is continuous
     file >> std::noskipws >> dummy;
@@ -1183,11 +1224,17 @@ void set_support( std::ifstream& file , int Isize , struct support_data& support
     file >> std::skipws >> line;
     support.readSequence = dummy + line;
   }
-  else { //read has gap
+  else { // read has gap
     file >> readLeft >> readRight;
     support.leftOfIndel = readLeft.length();
     support.readSequence = readLeft + readRight;
   }
+  std::streampos mark = file.tellg();
+
+  file.seekg(line_start);
+  support.alignedSequence.resize( mark - line_start );
+  file.read( &support.alignedSequence[0], mark - line_start );
+  // std::cerr << "read_line: " << support.alignedSequence << "\n";
 
   file >> temppm >> tempn1 >> tempn2; //+- num num
   file >> support.readBAMsource;
@@ -1224,7 +1271,7 @@ void set_supports( std::ifstream& file , struct pindel_fields& pid , std::map<st
 
   for ( unsigned supportIndex = 0; supportIndex < str2int( pid.NumSupports ); supportIndex++ ) {
     clear_support_data( sd ); //support data
-    set_support( file , str2int( pid.NT_size ) , sd , sm , om , lrl );
+    set_support( file, str2int( pid.NT_size ), sd, sm, om, lrl );
     linenum++;
     if ( value == 0 ) { //Support was read successfully
       pid.supports.push_back( sd );
@@ -1310,44 +1357,44 @@ void save_header( const struct header& h , std::map<std::string,std::string>& sa
   for ( std::map<std::string,std::string>::iterator sit = sampleMap.begin(); sit!=sampleMap.end(); ++sit )
   {
     outname = outputDirectoryName+( sit->second )+".sam";
+    std::cerr << "first: " << sit->first << "\n";
     file.open( outname.c_str() );
-    if ( file.good() ) //file existed
-    {
+    if ( file.good() ) { // file existed
       std::cout << "PINDEL2SAM_WARNING: File exists: " << outname;
       std::cout << "\n\tAssuming header present. Will append to existing files.\n";
       file.close();
     }
-    else //file did not exist
-    {
+    else { // file did not exist
       file.open( outname.c_str() , std::ios::out );
-      if ( file.is_open() ) //new file
-      {
+      if ( file.is_open() ) { // new file
         std::cout << "\t\tInitializing output file: " << outname << std::endl;
         file << h.top << h.custom << h.bottom;
+        file << "@RG\tID:" << sit->first << "\tLB:" << sit->first << "\tPL:ILLUMINA\tSM:" << sit->first << "\n";
         file.close();
       }
-      else //Error opening file
+      else // Error opening file
         std::cout << "PINDEL2SAM_ERROR: could not open " << outname << std::endl;
     }
-  }//for each sample
+  } //for each sample
 }
 
-void save_sam( const struct sam_fields& sam , const std::string& filename )
-{
+void save_sam(const struct sam_fields& sam, const std::string& filename, const std::string& sample_name ) {
   std::fstream file;
   std::string outname = outputDirectoryName+filename+".sam";
   file.open( outname.c_str() , std::ios::out | std::ios::app );
 
-  if ( file.good() ) //file exists and opened
+  if ( file.good() ) // file exists and opened
   {
     file << sam.QNAME << "\t" << sam.FLAG << "\t" << sam.RNAME << "\t";
     file << sam.POS << "\t" << sam.MAPQ << "\t" << sam.CIGAR << "\t";
     file << sam.RNEXT << "\t" << sam.PNEXT << "\t" << sam.TLEN << "\t";
-    file << sam.SEQ << "\t" << sam.QUAL << "\t" << sam.optional << std::endl;
+    file << sam.SEQ << "\t" << sam.QUAL << "\t" << sam.optional
+      << "\tRG:Z:" << sample_name
+      << std::endl;
     file.close();
   }
   else
-  {//Error opening file
+  { //Error opening file
     std::cout << "PINDEL2SAM_ERROR: Could not write to " << outname << std::endl;
   }
 }
@@ -1361,7 +1408,7 @@ void write_files( struct pindel_fields& pid, std::map<std::string,std::string>& 
       if ( om[sm[pid.supports[supportIndex].readBAMsource]] == omit->second ) {
         field_conversion( pid, supportIndex, sam );
         if ( sam.CIGAR.length() > 0 ) {
-          save_sam( sam, sm[pid.supports[supportIndex].readBAMsource] );
+          save_sam(sam, sm[pid.supports[supportIndex].readBAMsource], pid.supports[supportIndex].readBAMsource);
         }
       } //if sample filename match
     } //for each support

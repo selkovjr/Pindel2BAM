@@ -744,12 +744,12 @@ const int NUMBEROFPOUNDS = 100;
 const int NUMBEROFSUMMARYFIELDS = 31;
 const int NUMBEROFSUMMARYSAMPLEFIELDS = 7;
 const int UPDATEFREQUENCY = 10000;
-int NUMBEROFSAMPLES;
+unsigned NUMBEROFSAMPLES;
 int linenum = 0;
 int value = 0; //use for error values
 std::string outputDirectoryName = "";
 
-int str2int( const std::string& );
+unsigned str2int( const std::string& );
 std::string int2str( const int& );
 
 bool check_ending( const std::string );
@@ -856,36 +856,30 @@ int main( int argc, char* argv[] ) {
 //  std::iostream error_value;
 //  std::iostream error_log;
 
-/* GET INFO FROM CONFIG FILE - file with primary output filename piece */
+  /* GET INFO FROM CONFIG FILE - file with primary output filename piece */
   std::string configFilename = argv[3];
   std::map<std::string,std::string> sampleMap;
   std::map<std::string,int> outputMap;
   int configIn = read_config_file( configFilename , sampleMap , outputMap );
   NUMBEROFSAMPLES = configIn;
 
-/* GET HEADER INFO FROM REFERENCE INDEX FILE - file with SAM header sequence info */
+  /* GET HEADER INFO FROM REFERENCE INDEX FILE - file with SAM header sequence info */
   std::string referenceIndexFilename = argv[4];
   int referenceIn = read_fafai_file( referenceIndexFilename , head );
   save_header( head , sampleMap );
 
-/* GET INFO FROM PINDEL DATA FILE */
-  int pFnlen;
-  while ( indir = readdir( dirp ) ) //directory position returns 0 when done
-  {
+  /* GET INFO FROM PINDEL DATA FILE */
+  while ( (indir = readdir(dirp)) ) { //directory position returns 0 when done
     pindelFilename = (std::string)indir->d_name;
-    pFnlen = pindelFilename.length()-1;
-    if ( check_ending( pindelFilename ) ) //checks for _D & _SI
-    {
+    if ( check_ending( pindelFilename ) ) { //checks for _D & _SI
       fromPindel.open( ( inputDirectoryName+pindelFilename ).c_str() );
-      if ( fromPindel.good() && configIn && referenceIn ) //have a file to check
-      {
+      if ( fromPindel.good() && configIn && referenceIn ) { //have a file to check
         std::cerr << "\t\tOpened: " << inputDirectoryName+pindelFilename << std::endl;
 
         linenum = 0;
         nextprint = UPDATEFREQUENCY;
 
-        while ( fromPindel >> dummy )
-        {
+        while ( fromPindel >> dummy ) {
           temp = "";
           leftRefLength = 0;
 
@@ -897,8 +891,7 @@ int main( int argc, char* argv[] ) {
           // SUMMARY DATA LINE
           value = set_pindel_fields( fromPindel , PIN ); //set summary data
 
-          if ( value == 0 ) //no errors from summary section
-          {
+          if ( value == 0 ) { // no errors from summary section
             // REFERENCE LINE
             leftRefLength = set_reference_detail( fromPindel , PIN );
 
@@ -908,35 +901,30 @@ int main( int argc, char* argv[] ) {
             // WRITE TO FILE
             write_files( PIN , sampleMap , outputMap );
           }
-          else
-          {//Error in summary
+          else { //Error in summary
             std::cerr << "PINDEL2SAM_ERROR: bad summary on line = " << linenum << std::endl;
             std::getline( fromPindel , line );
             linenum++;
-          }//if reading supports
-        }//while reading file
+          } //if reading supports
+        } //while reading file
         fromPindel.close();
         std::cerr << "\t\t\t\tClosed: " << inputDirectoryName+pindelFilename << std::endl;
-      }//if file opened
-      else
-      {//Error opening file
+      } // if file opened
+      else { //Error opening file
         std::cerr << "PINDEL2SAM_ERROR: could not open " << inputDirectoryName+pindelFilename << std::endl;
       }
-    }//if _D or _SI
-  }//while files available to read in
-  int tempint = closedir( dirp );
+    } // if _D or _SI
+  } // while files available to read in
 
   return 0;
-}//main
+} //main
 
 /* FUNCTIONS */
-int str2int( const std::string& str )
-{
-  return atoi( str.c_str() );
+unsigned str2int( const std::string& str ) {
+  return (unsigned)atoi( str.c_str() );
 }
 
-std::string int2str( const int& ent )
-{
+std::string int2str( const int& ent ) {
   std::stringstream ss;
   ss << ent;
   std::string str = ss.str();
@@ -944,23 +932,19 @@ std::string int2str( const int& ent )
   return str;
 }
 
-bool check_ending( const std::string filename )
-{
-  int fnlen = filename.length()-1;
+bool check_ending( const std::string filename ) {
+  int fnlen = filename.length() - 1;
   if ( ( filename[fnlen] == 'D' && filename[fnlen-1] == '_' ) ||
        ( filename[fnlen] == 'I' && filename[fnlen-1] == 'S' && filename[fnlen-2] == '_' ) )
     return true;
-  else
-    return false;
+  return false;
 }
 
-void check_separation( std::ifstream& file , const char& dummy )
-{
+void check_separation( std::ifstream& file , const char& dummy ) {
   std::string line;
 
   if ( dummy == '#' ) file >> line;
-  if ( line.length() != NUMBEROFPOUNDS-1 )
-  {
+  if ( line.length() != NUMBEROFPOUNDS-1 ) {
     std::cerr << "PINDEL2SAM_ERROR: bad number of #'s = " << line.length() << std::endl;
     value = 1;
   }
@@ -977,7 +961,7 @@ int read_config_file( const std::string& filename , std::map<std::string,std::st
 
     std::string name, sample, temp;
     while ( file >> name >> temp >> sample ) {
-      for ( int c = 0; c < name.length(); c++ ) {
+      for ( unsigned c = 0; c < name.length(); c++ ) {
         if ( (char)name[c] == '/' ) name[c] = '_';
       }
       sampleMap[sample] = name;
@@ -1047,7 +1031,7 @@ int set_pindel_fields( std::ifstream& file , struct pindel_fields& pid )
   file >> pid.indelType >> pid.indelSize;
   file >> temp; //NT
   file >> pid.NT_size >> pid.NT_sequence;
-  if ( pid.NT_sequence.length()-2 != str2int( pid.NT_size ) )
+  if ( pid.NT_sequence.length() - 2 != str2int( pid.NT_size ) )
   {//Error NT sequence/size mismatch
     std::cerr << "PINDEL2SAM_ERROR: NT sequence/size mismatch ( " << pid.NT_sequence.length() << " ";
     std::cerr << pid.NT_size << " )\nSkipping support from line = " << linenum << std::endl;
@@ -1258,11 +1242,9 @@ void set_support( std::ifstream& file , int Isize , struct support_data& support
 
 void set_supports( std::ifstream& file , struct pindel_fields& pid , std::map<std::string,std::string>& sm , std::map<std::string,int>& om , const int lrl ) {
   struct support_data sd;
-  int eat;
   std::string line, readLeft, readRight;
-  bool hasgap;
 
-  for ( unsigned supportIndex = 0; supportIndex < str2int( pid.NumSupports ); supportIndex++ ) {
+  for (unsigned supportIndex = 0; supportIndex < str2int( pid.NumSupports ); supportIndex++ ) {
     clear_support_data( sd ); //support data
     set_support( file, str2int( pid.NT_size ), sd, sm, om, lrl );
     linenum++;
@@ -1319,9 +1301,8 @@ void print_support_data( const struct support_data& sd )
 
 void print_supports( const std::vector<struct support_data>& supports )
 {
-  int i = 0;
-  while ( i < supports.size() )
-  {
+  unsigned i = 0;
+  while ( i < supports.size() ) {
     print_support_data( supports[i] );
     i++;
   }

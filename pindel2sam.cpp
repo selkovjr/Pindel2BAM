@@ -873,14 +873,13 @@ int main( int argc, char* argv[] ) {
   while ( indir = readdir( dirp ) ) //directory position returns 0 when done
   {
     pindelFilename = (std::string)indir->d_name;
-    std::cerr << "pindelFilename: " << pindelFilename << "\n";
     pFnlen = pindelFilename.length()-1;
     if ( check_ending( pindelFilename ) ) //checks for _D & _SI
     {
       fromPindel.open( ( inputDirectoryName+pindelFilename ).c_str() );
       if ( fromPindel.good() && configIn && referenceIn ) //have a file to check
       {
-        std::cout << "\t\tOpened: " << inputDirectoryName+pindelFilename << std::endl;
+        std::cerr << "\t\tOpened: " << inputDirectoryName+pindelFilename << std::endl;
 
         linenum = 0;
         nextprint = UPDATEFREQUENCY;
@@ -911,17 +910,17 @@ int main( int argc, char* argv[] ) {
           }
           else
           {//Error in summary
-            std::cout << "PINDEL2SAM_ERROR: bad summary on line = " << linenum << std::endl;
+            std::cerr << "PINDEL2SAM_ERROR: bad summary on line = " << linenum << std::endl;
             std::getline( fromPindel , line );
             linenum++;
           }//if reading supports
         }//while reading file
         fromPindel.close();
-        std::cout << "\t\t\t\tClosed: " << inputDirectoryName+pindelFilename << std::endl;
+        std::cerr << "\t\t\t\tClosed: " << inputDirectoryName+pindelFilename << std::endl;
       }//if file opened
       else
       {//Error opening file
-        std::cout << "PINDEL2SAM_ERROR: could not open " << inputDirectoryName+pindelFilename << std::endl;
+        std::cerr << "PINDEL2SAM_ERROR: could not open " << inputDirectoryName+pindelFilename << std::endl;
       }
     }//if _D or _SI
   }//while files available to read in
@@ -962,7 +961,7 @@ void check_separation( std::ifstream& file , const char& dummy )
   if ( dummy == '#' ) file >> line;
   if ( line.length() != NUMBEROFPOUNDS-1 )
   {
-    std::cout << "PINDEL2SAM_ERROR: bad number of #'s = " << line.length() << std::endl;
+    std::cerr << "PINDEL2SAM_ERROR: bad number of #'s = " << line.length() << std::endl;
     value = 1;
   }
   linenum++;
@@ -973,44 +972,38 @@ int read_config_file( const std::string& filename , std::map<std::string,std::st
   std::ifstream file( filename.c_str() );
   int numsamples = 0;
 
-  if ( file.good() )//successfully opened config file
-  {
-    std::cout << "\t\tOpened: " << filename << std::endl;
+  if ( file.good() ) { //successfully opened config file
+    std::cerr << "\t\tOpened: " << filename << std::endl;
 
     std::string name, sample, temp;
-    while ( file >> name >> temp >> sample )
-    {
-      for ( int c = 0; c < name.length(); c++ )
-      {
-        if ( (char)name[c] == '/' )
-          name[c] = '_';
+    while ( file >> name >> temp >> sample ) {
+      for ( int c = 0; c < name.length(); c++ ) {
+        if ( (char)name[c] == '/' ) name[c] = '_';
       }
       sampleMap[sample] = name;
       outputMap[name] = numsamples++;
     }
 
     file.close();
-    std::cout << "\t\t\t\tClosed: " << filename << std::endl;
+    std::cerr << "\t\t\t\tClosed: " << filename << std::endl;
 
     return numsamples;
   }
-  else
-  {//Error opening config file
-    std::cout << "PINDEL2SAM_ERROR: could not open " << filename << std::endl;
+  else {
+    std::cerr << "PINDEL2SAM_ERROR: could not open " << filename << std::endl;
 
     return numsamples;
   }
 }
 
-int read_fafai_file( const std::string& filename , struct header& h )
-{
+int read_fafai_file( const std::string& filename , struct header& h ) {
   std::ifstream file( filename.c_str() );
   std::string chr, chrlen, temp;
   int numrefs = 0;
 
   if ( file.good() )
   {
-    std::cout << "\t\tOpened: " << filename << std::endl;
+    std::cerr << "\t\tOpened: " << filename << std::endl;
 
     h.top = "@HD\tVN:"+SAMVERSION+"\n";
     while ( file >> chr >> chrlen >> temp >> temp >> temp )
@@ -1022,13 +1015,13 @@ int read_fafai_file( const std::string& filename , struct header& h )
     set_header_bottom( h );
 
     file.close();
-    std::cout << "\t\t\t\tClose: " << filename << std::endl;
+    std::cerr << "\t\t\t\tClose: " << filename << std::endl;
 
     return numrefs;
   }
   else
   {//Error opening reference index file
-    std::cout << "PINDEL2SAM_ERROR: could not open " << filename << std::endl;
+    std::cerr << "PINDEL2SAM_ERROR: could not open " << filename << std::endl;
 
     return numrefs;
   }
@@ -1056,8 +1049,8 @@ int set_pindel_fields( std::ifstream& file , struct pindel_fields& pid )
   file >> pid.NT_size >> pid.NT_sequence;
   if ( pid.NT_sequence.length()-2 != str2int( pid.NT_size ) )
   {//Error NT sequence/size mismatch
-    std::cout << "PINDEL2SAM_ERROR: NT sequence/size mismatch ( " << pid.NT_sequence.length() << " ";
-    std::cout << pid.NT_size << " )\nSkipping support from line = " << linenum << std::endl;
+    std::cerr << "PINDEL2SAM_ERROR: NT sequence/size mismatch ( " << pid.NT_sequence.length() << " ";
+    std::cerr << pid.NT_size << " )\nSkipping support from line = " << linenum << std::endl;
     std::getline( file , temp );
 
     return 1;
@@ -1072,7 +1065,7 @@ int set_pindel_fields( std::ifstream& file , struct pindel_fields& pid )
   file >> pid.NumSupSamples;
   if ( str2int( pid.NumSupSamples ) > NUMBEROFSAMPLES )
   {//Error number of samples mismatch
-    std::cout << "PINDEL2SAM_ERROR: Number of samples mismatch\nSkipping supports from line = " << linenum << std::endl;
+    std::cerr << "PINDEL2SAM_ERROR: Number of samples mismatch\nSkipping supports from line = " << linenum << std::endl;
     std::getline( file , temp );
 
     return 2;
@@ -1241,12 +1234,12 @@ void set_support( std::ifstream& file , int Isize , struct support_data& support
   support.sense = temppm;
   if ( om.find( sm[support.readBAMsource] ) == omitlast ) { //find returns om.end() if key not found
     // Error readBAMsource not in the map
-    std::cout << "PINDEL2SAM_ERROR: readBAMsource not in the map: ";
-    std::cout << support.readBAMsource << "\n\tbad line read as ";
-    std::cout << support.readSequence << "\t" << temppm << "\t";
-    std::cout << tempn1 << "\t" << tempn2 << "\t" << support.readBAMsource;
-    std::cout << "\nSkipping support for this read from line = ";
-    std::cout << linenum << std::endl;
+    std::cerr << "PINDEL2SAM_ERROR: readBAMsource not in the map: ";
+    std::cerr << support.readBAMsource << "\n\tbad line read as ";
+    std::cerr << support.readSequence << "\t" << temppm << "\t";
+    std::cerr << tempn1 << "\t" << tempn2 << "\t" << support.readBAMsource;
+    std::cerr << "\nSkipping support for this read from line = ";
+    std::cerr << linenum << std::endl;
     std::getline( file , line );
 
     value = 3;
@@ -1254,10 +1247,10 @@ void set_support( std::ifstream& file , int Isize , struct support_data& support
   else {
     file >> support.readBarcode;
 
-    support.readBarcode.erase( 0 , 1 ); //removes @ from beginning
+    support.readBarcode.erase( 0 , 1 ); // removes @ from beginning
     support.readBarcode.erase( (size_t)(support.readBarcode.length()-2) , 2 ); //removes /1 or /2 from ending
 
-    std::getline( file , line ); //finish line to advance
+    std::getline( file , line ); // finish line to advance
 
     value = 0;
   }
@@ -1287,41 +1280,41 @@ void set_supports( std::ifstream& file , struct pindel_fields& pid , std::map<st
 void print_update( int& next )
 {
   if ( linenum == 0 )
-    std::cout << "\t\t\tConverting.\n";
+    std::cerr << "\t\t\tConverting.\n";
   else if ( linenum >= next )
   {
-    std::cout << "\t\t\tStill converting. At line " << linenum << "." << std::endl;
+    std::cerr << "\t\t\tStill converting. At line " << linenum << "." << std::endl;
     next += UPDATEFREQUENCY;
   }
 }
 
 void print_header( const struct header& h )
 {
-  std::cout << h.top << h.custom << h.bottom;
+  std::cerr << h.top << h.custom << h.bottom;
 }
 
 void print_pindel_fields( const struct pindel_fields& pid )
 {
-  std::cout << pid.indelType << '\t' << pid.indelSize << '\t';
-  std::cout << pid.NT_size << pid.NT_sequence << '\t';
-  std::cout << pid.chrID << '\t' << pid.BPLeft_plus_one << '\t';
-  std::cout << pid.NumSupports << '\t' << pid.NumSupSamples << std::endl;
+  std::cerr << pid.indelType << '\t' << pid.indelSize << '\t';
+  std::cerr << pid.NT_size << pid.NT_sequence << '\t';
+  std::cerr << pid.chrID << '\t' << pid.BPLeft_plus_one << '\t';
+  std::cerr << pid.NumSupports << '\t' << pid.NumSupSamples << std::endl;
   print_supports( pid.supports );
 }
 
 void print_support_with_summary( const struct pindel_fields& pid , int isup )
 {
-  std::cout << pid.indelType << '\t' << pid.indelSize << '\t';
-  std::cout << pid.NT_size << pid.NT_sequence << '\t';
-  std::cout << pid.chrID << '\t' << pid.BPLeft_plus_one << '\t';
-  std::cout << pid.NumSupports << '\t' << pid.NumSupSamples << std::endl;
+  std::cerr << pid.indelType << '\t' << pid.indelSize << '\t';
+  std::cerr << pid.NT_size << pid.NT_sequence << '\t';
+  std::cerr << pid.chrID << '\t' << pid.BPLeft_plus_one << '\t';
+  std::cerr << pid.NumSupports << '\t' << pid.NumSupSamples << std::endl;
   print_support_data( pid.supports[isup] );
 }
 
 void print_support_data( const struct support_data& sd )
 {
-  std::cout << sd.leftOfIndel << '\t' << sd.readSequence << '\t';
-  std::cout << sd.readBAMsource << '\t' << sd.readBarcode << '\n';
+  std::cerr << sd.leftOfIndel << '\t' << sd.readSequence << '\t';
+  std::cerr << sd.readBAMsource << '\t' << sd.readBarcode << '\n';
 }
 
 void print_supports( const std::vector<struct support_data>& supports )
@@ -1336,10 +1329,10 @@ void print_supports( const std::vector<struct support_data>& supports )
 
 void print_sam( const struct sam_fields& sam )
 {
-  std::cout << sam.QNAME << "\t" << sam.FLAG << "\t" << sam.RNAME << "\t";
-  std::cout << sam.POS << "\t" << sam.MAPQ << "\t" << sam.CIGAR << "\t";
-  std::cout << sam.RNEXT << "\t" << sam.PNEXT << "\t" << sam.TLEN << "\t";
-  std::cout << sam.SEQ << "\t" << sam.QUAL << "\t" << sam.optional << std::endl;
+  std::cerr << sam.QNAME << "\t" << sam.FLAG << "\t" << sam.RNAME << "\t";
+  std::cerr << sam.POS << "\t" << sam.MAPQ << "\t" << sam.CIGAR << "\t";
+  std::cerr << sam.RNEXT << "\t" << sam.PNEXT << "\t" << sam.TLEN << "\t";
+  std::cerr << sam.SEQ << "\t" << sam.QUAL << "\t" << sam.optional << std::endl;
 }
 
 void clear_support_data( struct support_data& sd )
@@ -1360,20 +1353,20 @@ void save_header( const struct header& h , std::map<std::string,std::string>& sa
     std::cerr << "first: " << sit->first << "\n";
     file.open( outname.c_str() );
     if ( file.good() ) { // file existed
-      std::cout << "PINDEL2SAM_WARNING: File exists: " << outname;
-      std::cout << "\n\tAssuming header present. Will append to existing files.\n";
+      std::cerr << "PINDEL2SAM_WARNING: File exists: " << outname;
+      std::cerr << "\n\tAssuming header present. Will append to existing files.\n";
       file.close();
     }
     else { // file did not exist
       file.open( outname.c_str() , std::ios::out );
       if ( file.is_open() ) { // new file
-        std::cout << "\t\tInitializing output file: " << outname << std::endl;
+        std::cerr << "\t\tInitializing output file: " << outname << std::endl;
         file << h.top << h.custom << h.bottom;
         file << "@RG\tID:" << sit->first << "\tLB:" << sit->first << "\tPL:ILLUMINA\tSM:" << sit->first << "\n";
         file.close();
       }
       else // Error opening file
-        std::cout << "PINDEL2SAM_ERROR: could not open " << outname << std::endl;
+        std::cerr << "PINDEL2SAM_ERROR: could not open " << outname << std::endl;
     }
   } //for each sample
 }
@@ -1395,7 +1388,7 @@ void save_sam(const struct sam_fields& sam, const std::string& filename, const s
   }
   else
   { //Error opening file
-    std::cout << "PINDEL2SAM_ERROR: Could not write to " << outname << std::endl;
+    std::cerr << "PINDEL2SAM_ERROR: Could not write to " << outname << std::endl;
   }
 }
 

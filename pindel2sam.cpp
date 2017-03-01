@@ -118,6 +118,7 @@
 #include <string>     // std::string, std::to_string
 #include <ios>        // std::streampos
 #include <sstream>
+#include <libgen.h>   // basename()
 
 namespace patch {
   template < typename T > std::string to_string( const T& n ) {
@@ -828,6 +829,7 @@ struct header {
   std::map<std::string,int> chrLen; //if need to track references within file
 };
 
+
 int main( int argc, char* argv[] ) {
 /* TAKE INPUTS FROM COMMAND LINE: PINDEL DATA FILE, PINDEL CONFIG FILE */
 //  handleInputs(argc,argv,first_line,last_line);
@@ -859,6 +861,7 @@ int main( int argc, char* argv[] ) {
   /* GET INFO FROM CONFIG FILE - file with primary output filename piece */
   std::string configFilename = argv[3];
   std::map<std::string,std::string> sampleMap;
+  std::map<std::string,std::string> Map;
   std::map<std::string,int> outputMap;
   int configIn = read_config_file( configFilename , sampleMap , outputMap );
   NUMBEROFSAMPLES = configIn;
@@ -961,11 +964,16 @@ int read_config_file( const std::string& filename , std::map<std::string,std::st
 
     std::string name, sample, temp;
     while ( file >> name >> temp >> sample ) {
-      for ( unsigned c = 0; c < name.length(); c++ ) {
-        if ( (char)name[c] == '/' ) name[c] = '_';
-      }
-      sampleMap[sample] = name;
-      outputMap[name] = numsamples++;
+      // for ( unsigned c = 0; c < name.length(); c++ ) {
+      //   if ( (char)name[c] == '/' ) name[c] = '_';
+      // }
+      std::stringstream bn;
+      bn << basename((char *)name.c_str());
+      std::cerr << "basename: " << bn.str() << "\n";
+
+      // sampleMap[sample] = name;
+      sampleMap[sample] = bn.str();
+      outputMap[bn.str()] = numsamples++;
     }
 
     file.close();
@@ -1216,14 +1224,11 @@ void set_support( std::ifstream& file , int Isize , struct support_data& support
   file >> temppm >> tempn1 >> tempn2; //+- num num
   file >> support.readBAMsource;
   support.sense = temppm;
-  if ( om.find( sm[support.readBAMsource] ) == omitlast ) { //find returns om.end() if key not found
+  if ( om.find( sm[support.readBAMsource] ) == omitlast ) { // find returns om.end() if key not found
     // Error readBAMsource not in the map
-    std::cerr << "PINDEL2SAM_ERROR: readBAMsource not in the map: ";
-    std::cerr << support.readBAMsource << "\n\tbad line read as ";
-    std::cerr << support.readSequence << "\t" << temppm << "\t";
-    std::cerr << tempn1 << "\t" << tempn2 << "\t" << support.readBAMsource;
-    std::cerr << "\nSkipping support for this read from line = ";
-    std::cerr << linenum << std::endl;
+    std::cerr << "PINDEL2SAM_ERROR: readBAMsource " << support.readBAMsource << " not in the map: " << support.readBAMsource << "\n";
+    std::cerr << "\tbad line read as " << support.readSequence << "\t" << temppm << "\t" << tempn1 << "\t" << tempn2 << "\t" << support.readBAMsource << "\n";
+    std::cerr << "Skipping support for this read from line = " << linenum << std::endl;
     std::getline( file , line );
 
     value = 3;
@@ -1328,10 +1333,14 @@ void save_header( const struct header& h , std::map<std::string,std::string>& sa
 {
   std::string outname;
   std::fstream file;
+  size_t index;
   for ( std::map<std::string,std::string>::iterator sit = sampleMap.begin(); sit!=sampleMap.end(); ++sit )
   {
-    outname = outputDirectoryName+( sit->second )+".sam";
-    std::cerr << "first: " << sit->first << "\n";
+    outname = outputDirectoryName + sit->second;
+    if ( (index = outname.find(".bam")) ) {
+      outname = outname.replace(index, 4, "");
+    }
+    outname += ".sam";
     file.open( outname.c_str() );
     if ( file.good() ) { // file existed
       std::cerr << "PINDEL2SAM_WARNING: File exists: " << outname;
@@ -1354,7 +1363,12 @@ void save_header( const struct header& h , std::map<std::string,std::string>& sa
 
 void save_sam(const struct sam_fields& sam, const std::string& filename, const std::string& sample_name ) {
   std::fstream file;
-  std::string outname = outputDirectoryName+filename+".sam";
+  size_t index;
+  std::string outname = outputDirectoryName + filename;
+  if ( (index = outname.find(".bam")) ) {
+    outname = outname.replace(index, 4, "");
+  }
+  outname += ".sam";
   file.open( outname.c_str() , std::ios::out | std::ios::app );
 
   if ( file.good() ) // file exists and opened

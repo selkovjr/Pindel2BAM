@@ -8,10 +8,10 @@ CC=g++
 #CFLAGS is(are) compiler flags
 CFLAGS=-g -Wall
 
-all: pin2sam
+all: pindel2sam
 
-pin2sam: pindel2sam.cpp
-	$(CC) $(CFLAGS) pindel2sam.cpp -o pin2sam
+pindel2sam: pindel2sam.cpp
+	$(CC) $(CFLAGS) pindel2sam.cpp -o pindel2sam
 
 clean:
-	rm pin2sam
+	rm pindel2sam
